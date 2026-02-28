@@ -150,6 +150,7 @@
       <input type="text" id="backendInput" placeholder="https://script.google.com/macros/s/.../exec">
       <br>
       <button class="save-btn" onclick="saveBackendUrl()">Save & Load Results</button>
+      <button class="save-btn" style="margin-left:8px;background:#2d6a4f" onclick="testConnection()">🔍 Test Connection</button>
     </div>
   </div>
 
@@ -193,6 +194,32 @@ window.addEventListener('load', () => {
   }
 });
 
+function testConnection() {
+  const url = document.getElementById('backendInput').value.trim() || localStorage.getItem(STORAGE_KEY);
+  if (!url) { alert('Please enter your backend URL first.'); return; }
+  document.getElementById('tableBody').innerHTML = '<div class="loading">🔍 Testing connection...</div>';
+  fetch(url + '?action=fetch')
+    .then(r => r.text())
+    .then(text => {
+      try {
+        const data = JSON.parse(text);
+        if (data.success) {
+          alert('✅ Connection successful!\n\n' + (data.results.length) + ' result(s) found in your sheet.');
+          allResults = data.results || [];
+          renderTable(allResults);
+          computeStats(allResults);
+        } else {
+          alert('⚠️ Connected but got error: ' + data.error);
+        }
+      } catch(e) {
+        alert('❌ Connected but response is not valid JSON.\n\nYou need to REDEPLOY your Apps Script as a NEW VERSION.\n\nGo to script.google.com → Deploy → Manage Deployments → Edit → New Version → Deploy');
+      }
+    })
+    .catch(e => {
+      alert('❌ Cannot connect.\n\nCheck:\n1. URL is correct\n2. Access is set to "Anyone"\n3. You authorized the script\n\nError: ' + e.message);
+    });
+}
+
 function saveBackendUrl() {
   const url = document.getElementById('backendInput').value.trim();
   if (!url) return;
@@ -206,19 +233,69 @@ function loadResults() {
   if (!url) return;
   document.getElementById('tableBody').innerHTML = '<div class="loading">⏳ Loading results...</div>';
 
-  fetch(url)
-    .then(r => r.json())
-    .then(data => {
+  // Use no-cors image ping to check connectivity, then fetch with mode cors
+  fetch(url + '?action=fetch', { method: 'GET' })
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
+    .then(text => {
+      let data;
+      try { data = JSON.parse(text); }
+      catch(e) { throw new Error('Invalid response from backend. Make sure you redeployed as a NEW VERSION after updating the script.'); }
       if (data.success) {
         allResults = data.results || [];
+        if (allResults.length === 0) {
+          document.getElementById('tableBody').innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>No results yet — students haven\'t submitted the quiz.</p></div>';
+          resetStats();
+        } else {
+          renderTable(allResults);
+          computeStats(allResults);
+        }
+      } else {
+        showError('Backend error: ' + (data.error || 'Unknown error'));
+      }
+    })
+    .catch(err => {
+      // Try alternative: load via script tag to bypass CORS
+      loadViaScriptTag(url);
+    });
+}
+
+function loadViaScriptTag(url) {
+  // Remove any existing script tag
+  const old = document.getElementById('jsonp-loader');
+  if (old) old.remove();
+
+  // Define callback
+  window.handleQuizResults = function(data) {
+    if (data && data.success) {
+      allResults = data.results || [];
+      if (allResults.length === 0) {
+        document.getElementById('tableBody').innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>No results yet — students haven\'t submitted the quiz.</p></div>';
+        resetStats();
+      } else {
         renderTable(allResults);
         computeStats(allResults);
-      } else {
-        showError('Backend returned an error: ' + (data.error || 'Unknown'));
+      }
+    } else {
+      showError('Could not load results. Please check your backend URL and make sure it is deployed with "Anyone" access and redeployed as a New Version.');
+    }
+  };
+
+  // Try direct fetch with no-cors as fallback info
+  fetch(url + '?action=fetch')
+    .then(r => r.text())
+    .then(text => {
+      try {
+        const data = JSON.parse(text);
+        window.handleQuizResults(data);
+      } catch(e) {
+        showError('⚠️ Cannot read results. Most likely cause: you need to <b>redeploy your Apps Script as a NEW VERSION</b>.<br><br>Steps:<br>1. Go to script.google.com<br>2. Deploy → Manage Deployments<br>3. Click ✏️ Edit → set Version to <b>New version</b><br>4. Click Deploy<br>5. Come back and refresh this dashboard');
       }
     })
     .catch(() => {
-      showError('Could not connect. Check your backend URL and make sure it is deployed as a Web App with "Anyone" access.');
+      showError('⚠️ Cannot connect to backend.<br><br>Please check:<br>1. Your backend URL is correct<br>2. Apps Script is deployed with <b>Anyone</b> access<br>3. You clicked <b>Authorize</b> when deploying<br>4. You redeployed as a <b>New Version</b> after making changes');
     });
 }
 
