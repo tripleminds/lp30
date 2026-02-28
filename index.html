@@ -610,6 +610,16 @@ function startTimer() {
   }, 1000);
 }
 
+function confirmSubmit() {
+  const answered = Object.keys(answers).length;
+  const unanswered = questions.length - answered;
+  if (unanswered > 0) {
+    const go = window.confirm(`You have ${unanswered} unanswered question(s).\n\nAre you sure you want to submit?`);
+    if (!go) return;
+  }
+  submitQuiz(false);
+}
+
 // ── AUTO SUBMIT WITH COUNTDOWN ────────────────────────────────
 function autoSubmitWithCountdown() {
   if (submitted) return;
@@ -633,6 +643,15 @@ function autoSubmitWithCountdown() {
 
 // ── SUBMIT ─────────────────────────────────────────────────────
 function submitQuiz(isAutoSubmit) {
+  // Ask for confirmation if submitting manually and not all answered
+  if (!isAutoSubmit && !submitted) {
+    const count = Object.keys(answers).length;
+    if (count < questions.length) {
+      const unanswered = questions.length - count;
+      const go = confirm(`You have ${unanswered} unanswered question(s).\n\nAre you sure you want to submit now?`);
+      if (!go) return;
+    }
+  }
   if (submitted) return;
   submitted = true;
   clearInterval(timerInterval);
@@ -688,8 +707,18 @@ function submitQuiz(isAutoSubmit) {
 }
 
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
+  const target = document.getElementById(id);
+  target.classList.add('active');
+  // intro and result need flex, quiz needs block
+  if (id === 'intro' || id === 'result') {
+    target.style.display = 'flex';
+  } else {
+    target.style.display = 'block';
+  }
 }
 </script>
 </body>
