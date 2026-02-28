@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bible Study Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9922a;
+    --gold-light: #f0c96e;
+    --deep: #1a1209;
+    --mid: #2e1f0a;
+    --cream: #fdf6e3;
+    --text: #3a2a10;
+    --border: #e8d5a3;
+    --pass: #2d6a4f;
+    --fail: #c1121f;
+    --timer-ok: #2d6a4f;
+    --timer-warn: #e07c00;
+    --timer-danger: #c1121f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Source Serif 4', Georgia, serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── INTRO SCREEN ── */
+  #intro {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, var(--deep) 0%, var(--mid) 100%);
+  }
+  #intro.active { display: flex; }
+  .intro-card {
+    background: var(--cream);
+    border-radius: 16px;
+    padding: 48px 40px;
+    max-width: 520px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    border: 2px solid var(--gold);
+  }
+  .intro-card .cross { font-size: 3rem; margin-bottom: 12px; }
+  .intro-card h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.9rem;
+    color: var(--deep);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  .intro-card .subtitle {
+    color: var(--gold);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+  .rules {
+    background: #fef9ee;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    text-align: left;
+    margin-bottom: 28px;
+  }
+  .rules li {
+    padding: 5px 0;
+    font-size: 0.95rem;
+    list-style: none;
+    padding-left: 22px;
+    position: relative;
+  }
+  .rules li::before { content: "✦"; position: absolute; left: 0; color: var(--gold); font-size: 0.7rem; top: 7px; }
+  .name-input {
+    width: 100%;
+    padding: 14px 18px;
+    font-size: 1rem;
+    font-family: 'Source Serif 4', serif;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    margin-bottom: 18px;
+    outline: none;
+    transition: border 0.2s;
+  }
+  .name-input:focus { border-color: var(--gold); }
+  .start-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--deep);
+    color: var(--gold-light);
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+  .start-btn:hover { background: var(--gold); color: var(--deep); }
+
+  /* ── QUIZ SCREEN ── */
+  #quiz { background: var(--cream); padding-bottom: 60px; }
+  #quiz.active { display: block; }
+
+  .quiz-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--deep);
+    color: white;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .quiz-header .hname {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--gold-light);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  .progress-wrap { flex: 1; background: rgba(255,255,255,0.15); border-radius: 99px; height: 6px; }
+  .progress-bar { height: 6px; border-radius: 99px; background: var(--gold); transition: width 0.3s; width: 0%; }
+  .progress-label { font-size: 0.8rem; color: #ccc; white-space: nowrap; }
+
+  .timer-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 8px 14px;
+    border: 1px solid rgba(255,255,255,0.2);
+    min-width: 110px;
+    justify-content: center;
+  }
+  .timer-icon { font-size: 1.1rem; }
+  .timer-display {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #fff;
+    transition: color 0.5s;
+  }
+  .timer-display.warn { color: #ffd166; }
+  .timer-display.danger { color: #ff6b6b; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+  .questions-container { max-width: 720px; margin: 0 auto; padding: 24px 20px; }
+  
+  .lesson-section {
+    margin-bottom: 8px;
+    margin-top: 32px;
+  }
+  .lesson-section:first-child { margin-top: 0; }
+  .lesson-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding: 6px 14px;
+    background: var(--deep);
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 16px;
+  }
+
+  .question-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-bottom: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .question-card:hover { border-color: var(--gold); box-shadow: 0 4px 20px rgba(201,146,42,0.1); }
+  .question-card.answered { border-left: 4px solid var(--gold); }
+  .q-number {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .q-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+  .options { display: flex; flex-direction: column; gap: 8px; }
+  .option-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  .option-label:hover { border-color: var(--gold); background: #fef9ee; }
+  .option-label input[type="radio"] { display: none; }
+  .option-label.selected { border-color: var(--gold); background: #fef9ee; }
+  .opt-letter {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--text);
+    font-weight: 700;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .option-label.selected .opt-letter { background: var(--gold); color: white; }
+
+  .submit-wrap {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    border-top: 2px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .answered-count { font-size: 0.9rem; color: #888; }
+  .answered-count span { font-weight: 700; color: var(--text); }
+  .submit-quiz-btn {
+    padding: 14px 32px;
+    background: var(--deep);
+    color: var(--gold-light);
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+  .submit-quiz-btn:hover { background: var(--gold); color: var(--deep); }
+
+  /* ── RESULT SCREEN ── */
+  #result {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, var(--deep) 0%, var(--mid) 100%);
+  }
+  #result.active { display: flex; }
+  .result-card {
+    background: var(--cream);
+    border-radius: 16px;
+    padding: 48px 40px;
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    border: 2px solid var(--gold);
+  }
+  .result-card .badge {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: var(--deep);
+    border: 3px solid var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.4rem;
+    margin: 0 auto 20px;
+  }
+  .result-card h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    margin-bottom: 6px;
+  }
+  .result-card .pass-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 4px 16px;
+    border-radius: 99px;
+    display: inline-block;
+    margin-bottom: 24px;
+  }
+  .pass-label.pass { background: #d8f3dc; color: var(--pass); }
+  .pass-label.fail { background: #ffe0e0; color: var(--fail); }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .stat-box {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .stat-box .val {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--deep);
+  }
+  .stat-box .lbl { font-size: 0.75rem; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+  .auto-note { font-size: 0.85rem; color: var(--fail); font-style: italic; margin-bottom: 16px; }
+  .result-card .verse {
+    font-size: 0.9rem;
+    color: #888;
+    font-style: italic;
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+  }
+
+  /* ── TIMEOUT OVERLAY ── */
+  .timeout-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,18,9,0.92);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+  }
+  .timeout-overlay.show { display: flex; }
+  .timeout-box {
+    background: var(--cream);
+    border: 3px solid var(--fail);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    max-width: 380px;
+    animation: zoomIn 0.4s ease;
+  }
+  @keyframes zoomIn { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
+  .timeout-box h2 { font-family:'Playfair Display',serif; font-size:2rem; color:var(--fail); margin-bottom:10px; }
+  .timeout-box p { font-size:1rem; color:#555; margin-bottom:20px; }
+  .timeout-box .submit-now-btn {
+    padding:14px 32px; background:var(--fail); color:white;
+    font-family:'Playfair Display',serif; font-size:1.1rem; font-weight:700;
+    border:none; border-radius:8px; cursor:pointer; width:100%;
+  }
+
+  @media(max-width:600px) {
+    .intro-card, .result-card { padding: 32px 22px; }
+    .quiz-header .hname { max-width: 100px; }
+    .questions-container { padding: 16px 12px; }
+    .question-card { padding: 16px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── INTRO ── -->
+<div id="intro" class="screen active">
+  <div class="intro-card">
+    <div class="cross">✝</div>
+    <h1>Bible Study Quiz</h1>
+    <p class="subtitle">Lessons 14 – 24</p>
+    <ul class="rules">
+      <li>50 multiple choice questions</li>
+      <li>You have exactly <strong>20 minutes</strong></li>
+      <li>Quiz auto-submits when time runs out</li>
+      <li>Your score will be shown immediately</li>
+      <li>Results are sent to your teacher</li>
+    </ul>
+    <input class="name-input" type="text" id="studentName" placeholder="Enter your full name..." autocomplete="off">
+    <button class="start-btn" onclick="startQuiz()">Begin Quiz ✦</button>
+  </div>
+</div>
+
+<!-- ── QUIZ ── -->
+<div id="quiz" class="screen">
+  <div class="quiz-header">
+    <div class="hname" id="headerName">Student</div>
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-label" id="progressLabel">0 / 50</div>
+    <div class="timer-wrap">
+      <span class="timer-icon">⏱</span>
+      <div class="timer-display" id="timerDisplay">20:00</div>
+    </div>
+  </div>
+  <div class="questions-container" id="questionsContainer"></div>
+  <div class="submit-wrap">
+    <div class="answered-count">Answered: <span id="answeredCount">0</span> / 50</div>
+    <button class="submit-quiz-btn" onclick="submitQuiz(false)">Submit Quiz →</button>
+  </div>
+</div>
+
+<!-- ── RESULT ── -->
+<div id="result" class="screen">
+  <div class="result-card">
+    <div class="badge" id="resultBadge">🎉</div>
+    <h2 id="resultScore">0 / 100</h2>
+    <div class="pass-label" id="passLabel">PASS</div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="val" id="statCorrect">0</div><div class="lbl">Correct</div></div>
+      <div class="stat-box"><div class="val" id="statWrong">0</div><div class="lbl">Wrong</div></div>
+      <div class="stat-box"><div class="val" id="statPct">0%</div><div class="lbl">Percentage</div></div>
+      <div class="stat-box"><div class="val" id="statTime">—</div><div class="lbl">Time Taken</div></div>
+    </div>
+    <p class="auto-note" id="autoNote" style="display:none">⚠️ Quiz was auto-submitted when time ran out.</p>
+    <p class="verse">"Study to shew thyself approved unto God" — 2 Timothy 2:15</p>
+  </div>
+</div>
+
+<!-- ── TIMEOUT OVERLAY ── -->
+<div class="timeout-overlay" id="timeoutOverlay">
+  <div class="timeout-box">
+    <h2>⏰ Time's Up!</h2>
+    <p>Your 20 minutes are up. Your answers are being submitted now.</p>
+    <button class="submit-now-btn" onclick="submitQuiz(true)">Submit My Answers</button>
+  </div>
+</div>
+
+<script>
+// ── CONFIGURATION ─────────────────────────────────────────────
+const BACKEND_URL   = "PASTE_YOUR_BACKEND_URL_HERE";
+const TIME_LIMIT    = 20 * 60; // 20 minutes in seconds
+const PASS_MARK     = 50;      // 50% to pass
+
+// ── QUESTIONS DATA ────────────────────────────────────────────
+const questions = [
+  // LESSON 14
+  { lesson:"Lesson 14 – Weapons of Worship 5: Songs", q:"What is the memory verse reference for Lesson 14 (Weapons of Worship 5)?", a:"Psalm 150:2", b:"Ephesians 5:19", c:"Colossians 3:16", d:"John 4:24", ans:"B" },
+  { lesson:"Lesson 14 – Weapons of Worship 5: Songs", q:"Worshipping in spirit and truth requires:", a:"Only our emotions", b:"Only our intellect", c:"Both our emotions and understanding of God", d:"Just singing loudly", ans:"C" },
+  { lesson:"Lesson 14 – Weapons of Worship 5: Songs", q:"Psalms and Hymns are described in the lesson as:", a:"Modern worship songs", b:"The original worship songs", c:"Optional for Christians", d:"Only for church services on Sunday", ans:"B" },
+  { lesson:"Lesson 14 – Weapons of Worship 5: Songs", q:"Singing in unity as a congregation is described as:", a:"Just entertainment", b:"A powerful form of worship that strengthens faith and encourages one another", c:"A replacement for prayer", d:"Only a tradition", ans:"B" },
+  { lesson:"Lesson 14 – Weapons of Worship 5: Songs", q:"\"Singing to Memorize Truth\" means singing helps us to:", a:"Learn music theory", b:"Memorize melodies only", c:"Remember and internalize God's Word (Psalm 119:3)", d:"Compose new songs", ans:"C" },
+  // LESSON 15
+  { lesson:"Lesson 15 – Vain Worship", q:"Vain worship occurs when we:", a:"Sing too loudly", b:"Disregard God's instructions and approach Him with a disrespectful, casual attitude", c:"Pray for too long", d:"Give too much in offerings", ans:"B" },
+  { lesson:"Lesson 15 – Vain Worship", q:"Which biblical example is given as a stark reminder of wrong worship?", a:"King David", b:"Moses", c:"Aaron's sons, Nadab and Abihu (Leviticus 10:3)", d:"Elijah", ans:"C" },
+  { lesson:"Lesson 15 – Vain Worship", q:"What does God value over outward worship actions?", a:"Large congregations", b:"Truth, honesty, and a pure heart (Matthew 15:8–9)", c:"Musical instruments", d:"Long church services", ans:"B" },
+  { lesson:"Lesson 15 – Vain Worship", q:"The people of Malachi's time treated worship lightly by:", a:"Not attending church", b:"Always giving their best offerings", c:"Dishonoring God and focusing on pleasing themselves rather than following His commands", d:"Praying constantly", ans:"C" },
+  { lesson:"Lesson 15 – Vain Worship", q:"According to Acts 5:1–11, God sees through all:", a:"Our prayers", b:"Our offerings", c:"Pretense and bad intentions (e.g., Ananias and Sapphira)", d:"Our worship songs", ans:"C" },
+  // LESSON 16
+  { lesson:"Lesson 16 – Repentance", q:"What is the best definition of repentance as taught in Lesson 16?", a:"Feeling sorry temporarily", b:"A sincere change of heart, recognizing wrongdoing, and turning away from sin and back to God", c:"Going to church more often", d:"Asking other people for forgiveness", ans:"B" },
+  { lesson:"Lesson 16 – Repentance", q:"Repentance is described in the lesson as:", a:"A one-time event only", b:"Only necessary for serious sins", c:"Not just a one-time thing but a lifelong attitude of the heart (2 Corinthians 7:10)", d:"Only for adults", ans:"C" },
+  { lesson:"Lesson 16 – Repentance", q:"When we truly repent, God promises to:", a:"Give us instant prosperity", b:"Remove all temptation from our lives", c:"Forgive us completely (1 John 1:9)", d:"Give us fame and recognition", ans:"C" },
+  { lesson:"Lesson 16 – Repentance", q:"The memory verse Acts 2:38 states Peter said:", a:"Repent and be baptized every one of you in the name of Jesus Christ for the remission of sins", b:"Flee from sexual immorality", c:"The Lord is my shepherd", d:"For God so loved the world", ans:"A" },
+  { lesson:"Lesson 16 – Repentance", q:"A benefit of a repented life is:", a:"Guilt and shame remain", b:"God brings restoration, peace, and joy (Psalm 51:10)", c:"More temptation follows", d:"Public recognition", ans:"B" },
+  // LESSON 17
+  { lesson:"Lesson 17 – Forgiveness", q:"According to the lesson, forgiveness is:", a:"Just a suggestion", b:"Optional for Christians", c:"A command, not just a suggestion (Ephesians 4:32)", d:"Only for small offenses", ans:"C" },
+  { lesson:"Lesson 17 – Forgiveness", q:"The memory verse Colossians 3:13 teaches:", a:"To pray without ceasing", b:"To forbear one another and forgive, even as Christ forgave you", c:"To honor your parents", d:"To give generously", ans:"B" },
+  { lesson:"Lesson 17 – Forgiveness", q:"Unforgiveness can spiritually lead to:", a:"Faster spiritual growth", b:"Better relationships", c:"A barrier between the individual and God (Mark 11:25–26)", d:"More of God's blessings", ans:"C" },
+  { lesson:"Lesson 17 – Forgiveness", q:"Forgiveness does NOT mean:", a:"Releasing the desire for revenge", b:"Choosing peace over revenge", c:"Forgetting or excusing the wrong (Colossians 3:13)", d:"Allowing for reconciliation and healing", ans:"C" },
+  { lesson:"Lesson 17 – Forgiveness", q:"According to the lesson, we forgive others because:", a:"It always makes us feel better immediately", b:"We have been forgiven by God (Luke 6:37)", c:"Society and culture expect it", d:"It is easy to do", ans:"B" },
+  // LESSON 18
+  { lesson:"Lesson 18 – Homosexuality & Lesbianism", q:"The memory verse Leviticus 20:13 (Lesson 18) addresses:", a:"Sexual purity in marriage", b:"The biblical consequence of men lying with men", c:"Forgiveness of sexual sin", d:"The importance of prayer", ans:"B" },
+  { lesson:"Lesson 18 – Homosexuality & Lesbianism", q:"The word 'homosexuality' comes from the Greek word 'homos' meaning:", a:"Different", b:"Love", c:"The same", d:"Wrong", ans:"C" },
+  { lesson:"Lesson 18 – Homosexuality & Lesbianism", q:"According to the Bible, marriage is designed to be between:", a:"Any two people who love each other", b:"One man and one woman (Genesis 2:24)", c:"Two people of the same gender", d:"People chosen by the community", ans:"B" },
+  { lesson:"Lesson 18 – Homosexuality & Lesbianism", q:"According to the lesson, same-sex sexual sin, like all sin:", a:"Cannot be forgiven under any circumstances", b:"Is worse than all other sins", c:"Can be forgiven through repentance and faith in Jesus (1 Corinthians 6:9–11)", d:"Only applies to adults", ans:"C" },
+  { lesson:"Lesson 18 – Homosexuality & Lesbianism", q:"The lesson states that everyone struggling with sexuality:", a:"Is beyond God's help", b:"Is deeply loved by God and called to live in truth and purity", c:"Should be avoided by Christians", d:"Cannot change", ans:"B" },
+  // LESSON 20
+  { lesson:"Lesson 20 – Benefit of Worship 1: Unspeakable Joy", q:"The memory verse for 'Unspeakable Joy' is from:", a:"John 16:31–33", b:"Nehemiah 8:10", c:"1 Peter 1:8", d:"Psalm 16:11", ans:"C" },
+  { lesson:"Lesson 20 – Benefit of Worship 1: Unspeakable Joy", q:"The lesson describes unspeakable joy as:", a:"A temporary emotional feeling based on circumstances", b:"Just happiness that comes and goes", c:"A lasting, transformative experience that surpasses understanding, rooted in God's presence", d:"Only felt during church services", ans:"C" },
+  { lesson:"Lesson 20 – Benefit of Worship 1: Unspeakable Joy", q:"What makes this joy 'unspeakable'?", a:"It is too quiet to notice", b:"It is so profound and intense that words cannot fully describe it", c:"It is a secret kept from non-believers", d:"Only certain special people can experience it", ans:"B" },
+  { lesson:"Lesson 20 – Benefit of Worship 1: Unspeakable Joy", q:"Being 'sprinkled' with the blood of Jesus Christ means we are:", a:"Physically cleaned with water", b:"Chosen and set apart by God", c:"Purified and sanctified through Christ's sacrifice (1 Peter 1:2)", d:"Given material wealth", ans:"C" },
+  { lesson:"Lesson 20 – Benefit of Worship 1: Unspeakable Joy", q:"The 'inheritance' in 1 Peter 1:4 refers to:", a:"Material wealth and land", b:"Family property passed down", c:"Salvation reserved for us in heaven", d:"A church leadership position", ans:"C" },
+  // LESSON 21
+  { lesson:"Lesson 21 – Benefit of Worship 2: Spiritual Growth", q:"The memory verse Psalm 32:8 (Lesson 21) promises:", a:"I will give you riches", b:"I will instruct thee and teach thee in the way...I will guide thee with mine eye", c:"I will fight your battles", d:"I will never leave you", ans:"B" },
+  { lesson:"Lesson 21 – Benefit of Worship 2: Spiritual Growth", q:"Divine direction through worship (Psalm 25:4–5) means:", a:"God tells us exactly what career to choose", b:"Worship helps us focus on God by trusting in Him, and He shows us His ways", c:"We receive a map of our future", d:"We no longer face difficult decisions", ans:"B" },
+  { lesson:"Lesson 21 – Benefit of Worship 2: Spiritual Growth", q:"God's presence in worship (Psalm 22:3) draws us to:", a:"Only large, well-known churches", b:"Him and gives us strength, comfort, and joy", c:"Only worship when we feel happy", d:"Depend only on worship leaders", ans:"B" },
+  { lesson:"Lesson 21 – Benefit of Worship 2: Spiritual Growth", q:"Spiritual growth through worship includes God transforming us into:", a:"Perfect people with no struggles", b:"His image (2 Corinthians 3:18)", c:"Wealthy Christians", d:"Church celebrities", ans:"B" },
+  { lesson:"Lesson 21 – Benefit of Worship 2: Spiritual Growth", q:"According to the lesson's conclusion, worship is:", a:"Just an event you attend on Sundays", b:"Only about singing songs", c:"A powerful lifestyle that brings direction, spiritual growth, and God's presence", d:"Optional for teenagers", ans:"C" },
+  // LESSON 22
+  { lesson:"Lesson 22 – Drug Abuse", q:"The memory verse 1 Corinthians 6:12 (Drug Abuse) key phrase is:", a:"Flee from sexual immorality", b:"All things are lawful for me, but all things are not helpful. I will not be dominated by anything", c:"Do not be drunk with wine", d:"The body is the temple of the Holy Spirit", ans:"B" },
+  { lesson:"Lesson 22 – Drug Abuse", q:"Which of the following is NOT listed as a cause of drug abuse?", a:"Peer pressure", b:"Curiosity and boredom", c:"Poor academic performance", d:"Family or environmental influence", ans:"C" },
+  { lesson:"Lesson 22 – Drug Abuse", q:"Drug abuse (Psychoactive Substance Use Disorder) is defined as:", a:"Taking prescribed medication as instructed", b:"The misuse of substances like alcohol, tobacco, or illegal drugs that harm the body and mind", c:"Drinking coffee or energy drinks", d:"Taking vitamins daily", ans:"B" },
+  { lesson:"Lesson 22 – Drug Abuse", q:"The lesson teaches that your body is:", a:"Unimportant compared to the soul", b:"Just physical matter that doesn't matter to God", c:"The temple of God (1 Corinthians 6:19–20) and must be honored", d:"Beyond God's care or concern", ans:"C" },
+  { lesson:"Lesson 22 – Drug Abuse", q:"To overcome drug abuse, the first step listed is:", a:"Hide your problem from everyone", b:"Admit you have a problem and decide to make a change", c:"Try to quit on your own without any help", d:"Blame friends, family, or environment", ans:"B" },
+  // LESSON 23
+  { lesson:"Lesson 23 – Transgender", q:"The memory verse Genesis 1:27 (Lesson 23) states:", a:"God created man in His image; male and female created He them", b:"Flee from sexual immorality", c:"The Lord is my shepherd", d:"For God so loved the world", ans:"A" },
+  { lesson:"Lesson 23 – Transgender", q:"According to the lesson, how many genders did God create?", a:"A spectrum of multiple genders", b:"Three genders", c:"Two genders: male and female", d:"One universal gender", ans:"C" },
+  { lesson:"Lesson 23 – Transgender", q:"The lesson describes transgender identity as:", a:"A modern scientific discovery to celebrate", b:"A serious deviation from God's design for human beings", c:"Something the Bible fully supports", d:"A gift from God for certain people", ans:"B" },
+  { lesson:"Lesson 23 – Transgender", q:"How does the lesson advise us to relate to transgender persons?", a:"Mock and shame them publicly", b:"Completely avoid and refuse to interact with them", c:"Tell them the need to serve God with their body, guide them to seek deliverance, and pray for them", d:"Fully agree with and affirm their choices", ans:"C" },
+  { lesson:"Lesson 23 – Transgender", q:"Who is NOT an author of confusion according to 1 Corinthians 14:33?", a:"The devil", b:"Sin", c:"God", d:"The world's culture", ans:"C" },
+  // LESSON 24
+  { lesson:"Lesson 24 – Sexual Immorality", q:"The memory verse 1 Corinthians 6:18 (Lesson 24) says:", a:"Flee from sexual immorality. All other sins are outside the body, but whoever sins sexually sins against their own body", b:"You shall not commit adultery", c:"The marriage bed is undefiled", d:"Love one another as I have loved you", ans:"A" },
+  { lesson:"Lesson 24 – Sexual Immorality", q:"Sexual immorality is defined in the lesson as:", a:"Only adultery between married people", b:"Any sexual behavior outside of God's design for marriage between one man and one woman", c:"Only fornication before marriage", d:"Only viewing pornography", ans:"B" },
+  { lesson:"Lesson 24 – Sexual Immorality", q:"God's original design for sexual intimacy is:", a:"For any two consenting adults who love each other", b:"A gift within the covenant of marriage between one man and one woman (Hebrews 13:4)", c:"An outdated concept for modern society", d:"Optional for committed Christian couples", ans:"B" },
+  { lesson:"Lesson 24 – Sexual Immorality", q:"Which practical step does the lesson suggest to overcome sexual immorality?", a:"Ignore all temptation and never think about it", b:"Set boundaries early regarding dating, physical affection, and temptation, and find accountability", c:"Avoid all friendships with the opposite gender", d:"Only pray and never talk to anyone about it", ans:"B" },
+  { lesson:"Lesson 24 – Sexual Immorality", q:"Which 'Step to Overcome Sexual Immorality' involves spiritual disciplines?", a:"Guarding your eyes, mind, and heart (Matthew 5:28–3)", b:"Avoiding all social media", c:"Staying away from church to avoid judgment", d:"Confession and repentance (1 John 1:9)", ans:"D" },
+];
+
+// ── STATE ──────────────────────────────────────────────────────
+let studentName   = '';
+let startTime     = null;
+let timerInterval = null;
+let secondsLeft   = TIME_LIMIT;
+let answers       = {};
+let submitted     = false;
+
+// ── START QUIZ ─────────────────────────────────────────────────
+function startQuiz() {
+  const nameEl = document.getElementById('studentName');
+  studentName  = nameEl.value.trim();
+  if (!studentName) { nameEl.focus(); nameEl.style.border = '2px solid #c1121f'; return; }
+  nameEl.style.border = '';
+
+  startTime = new Date();
+  document.getElementById('headerName').textContent = studentName;
+  renderQuestions();
+  showScreen('quiz');
+  startTimer();
+}
+
+// ── RENDER QUESTIONS ───────────────────────────────────────────
+function renderQuestions() {
+  const container = document.getElementById('questionsContainer');
+  let html = '';
+  let currentLesson = '';
+
+  questions.forEach((q, idx) => {
+    if (q.lesson !== currentLesson) {
+      currentLesson = q.lesson;
+      html += `<div class="lesson-section"><div class="lesson-label">${q.lesson}</div>`;
+    }
+
+    html += `<div class="question-card" id="card-${idx}">
+      <div class="q-number">Question ${idx + 1} of ${questions.length}</div>
+      <div class="q-text">${idx + 1}. ${q.q}</div>
+      <div class="options">
+        ${['a','b','c','d'].map(opt => `
+          <label class="option-label" id="lbl-${idx}-${opt}" onclick="selectAnswer(${idx}, '${opt.toUpperCase()}', '${opt}')">
+            <input type="radio" name="q${idx}" value="${opt.toUpperCase()}">
+            <span class="opt-letter">${opt.toUpperCase()}</span>
+            <span>${q[opt]}</span>
+          </label>`).join('')}
+      </div>
+    </div>`;
+
+    // Close lesson section div if next question is different lesson or last
+    if (idx === questions.length - 1 || questions[idx + 1].lesson !== currentLesson) {
+      html += '</div>';
+    }
+  });
+
+  container.innerHTML = html;
+}
+
+function selectAnswer(qIdx, letter, optKey) {
+  answers[qIdx] = letter;
+  ['a','b','c','d'].forEach(o => {
+    document.getElementById(`lbl-${qIdx}-${o}`).classList.remove('selected');
+  });
+  document.getElementById(`lbl-${qIdx}-${optKey}`).classList.add('selected');
+  document.getElementById(`card-${qIdx}`).classList.add('answered');
+  updateProgress();
+}
+
+function updateProgress() {
+  const count = Object.keys(answers).length;
+  document.getElementById('answeredCount').textContent = count;
+  document.getElementById('progressLabel').textContent = `${count} / 50`;
+  document.getElementById('progressBar').style.width = `${(count / 50) * 100}%`;
+}
+
+// ── TIMER ──────────────────────────────────────────────────────
+function startTimer() {
+  timerInterval = setInterval(() => {
+    secondsLeft--;
+    const m = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
+    const s = (secondsLeft % 60).toString().padStart(2, '0');
+    const display = document.getElementById('timerDisplay');
+    display.textContent = `${m}:${s}`;
+    display.classList.remove('warn', 'danger');
+    if (secondsLeft <= 300 && secondsLeft > 60)  display.classList.add('warn');
+    if (secondsLeft <= 60)  display.classList.add('danger');
+    if (secondsLeft <= 0) {
+      clearInterval(timerInterval);
+      document.getElementById('timeoutOverlay').classList.add('show');
+    }
+  }, 1000);
+}
+
+// ── SUBMIT ─────────────────────────────────────────────────────
+function submitQuiz(isAutoSubmit) {
+  if (submitted) return;
+  submitted = true;
+  clearInterval(timerInterval);
+  document.getElementById('timeoutOverlay').classList.remove('show');
+
+  const endTime    = new Date();
+  const elapsed    = Math.floor((endTime - startTime) / 1000);
+  const mins       = Math.floor(elapsed / 60);
+  const secs       = elapsed % 60;
+  const timeTaken  = `${mins}m ${secs}s`;
+
+  let correct = 0;
+  questions.forEach((q, idx) => {
+    if (answers[idx] === q.ans) correct++;
+  });
+
+  const score      = correct * 2;
+  const pct        = Math.round((correct / questions.length) * 100);
+  const passed     = pct >= PASS_MARK;
+
+  // Show result
+  document.getElementById('resultBadge').textContent   = passed ? '🏆' : '📖';
+  document.getElementById('resultScore').textContent   = `${score} / 100`;
+  const pl = document.getElementById('passLabel');
+  pl.textContent = passed ? 'PASS ✓' : 'FAIL ✗';
+  pl.className   = 'pass-label ' + (passed ? 'pass' : 'fail');
+  document.getElementById('statCorrect').textContent = correct;
+  document.getElementById('statWrong').textContent   = questions.length - correct;
+  document.getElementById('statPct').textContent     = pct + '%';
+  document.getElementById('statTime').textContent    = timeTaken;
+
+  if (isAutoSubmit) {
+    document.getElementById('autoNote').style.display = 'block';
+  }
+
+  showScreen('result');
+
+  // Send to backend
+  if (BACKEND_URL !== "PASTE_YOUR_BACKEND_URL_HERE") {
+    fetch(BACKEND_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: studentName, score, total: 100, percentage: pct, timeTaken, autoSubmit: isAutoSubmit, passed })
+    }).catch(() => {});
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>

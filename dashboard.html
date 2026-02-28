@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Dashboard – Teacher View</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9922a; --gold-light: #f0c96e; --deep: #1a1209;
+    --mid: #2e1f0a; --cream: #fdf6e3; --text: #3a2a10;
+    --border: #e8d5a3; --pass: #2d6a4f; --fail: #c1121f;
+    --pass-bg: #d8f3dc; --fail-bg: #ffe0e0;
+    --card: white; --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Source Serif 4', Georgia, serif; background: #f5efe0; color: var(--text); min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, var(--deep), var(--mid));
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  }
+  header .brand { display: flex; align-items: center; gap: 14px; }
+  header .brand .icon { font-size: 2rem; }
+  header .brand h1 { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--gold-light); line-height: 1.2; }
+  header .brand p { font-size: 0.8rem; color: #aaa; letter-spacing: 1px; }
+  .refresh-btn {
+    padding: 10px 22px; background: transparent; color: var(--gold-light);
+    border: 1.5px solid var(--gold); border-radius: 8px; cursor: pointer;
+    font-family: 'Source Serif 4', serif; font-size: 0.9rem; transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .refresh-btn:hover { background: var(--gold); color: var(--deep); }
+
+  .main { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+
+  /* CONFIG BANNER */
+  .config-banner {
+    background: #fff3cd; border: 1.5px solid #ffc107; border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 28px; display: flex; align-items: flex-start; gap: 12px;
+  }
+  .config-banner .icon { font-size: 1.4rem; margin-top: 2px; }
+  .config-banner h3 { font-size: 0.95rem; font-weight: 700; color: #856404; margin-bottom: 4px; }
+  .config-banner p { font-size: 0.85rem; color: #856404; }
+  .config-banner input {
+    margin-top: 10px; width: 100%; padding: 10px 14px; border: 1.5px solid #ffc107;
+    border-radius: 6px; font-size: 0.9rem; font-family: inherit; outline: none;
+    background: white;
+  }
+  .config-banner .save-btn {
+    margin-top: 8px; padding: 8px 20px; background: #856404; color: white;
+    border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-family: inherit;
+  }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; text-align: center; box-shadow: var(--shadow);
+  }
+  .stat-card .val { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 700; color: var(--deep); }
+  .stat-card .val.pass-col { color: var(--pass); }
+  .stat-card .val.fail-col { color: var(--fail); }
+  .stat-card .val.gold-col { color: var(--gold); }
+  .stat-card .lbl { font-size: 0.75rem; color: #888; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+
+  /* TABLE */
+  .table-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+  .table-header {
+    padding: 18px 24px; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border); background: #fef9ee; flex-wrap: wrap; gap: 10px;
+  }
+  .table-header h2 { font-family: 'Playfair Display', serif; font-size: 1.2rem; }
+  .table-header .search {
+    padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 6px;
+    font-family: inherit; font-size: 0.9rem; outline: none; width: 220px;
+  }
+  .table-header .search:focus { border-color: var(--gold); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    background: var(--deep); color: var(--gold-light); padding: 12px 16px;
+    text-align: left; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase;
+    font-weight: 700;
+  }
+  td { padding: 14px 16px; border-bottom: 1px solid #f3ead2; font-size: 0.95rem; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fef9ee; }
+  .rank { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; color: #bbb; }
+  .rank.top1 { color: #ffd700; }
+  .rank.top2 { color: #c0c0c0; }
+  .rank.top3 { color: #cd7f32; }
+  .student-name { font-weight: 600; }
+  .score-cell { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; }
+  .pct-bar-wrap { width: 100%; background: #f0e8d0; border-radius: 99px; height: 6px; margin-top: 4px; }
+  .pct-bar { height: 6px; border-radius: 99px; background: var(--gold); transition: width 0.4s; }
+  .pct-bar.low { background: var(--fail); }
+  .badge {
+    padding: 4px 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 700;
+    letter-spacing: 1px; display: inline-block;
+  }
+  .badge.pass { background: var(--pass-bg); color: var(--pass); }
+  .badge.fail { background: var(--fail-bg); color: var(--fail); }
+  .badge.auto { background: #fff3cd; color: #856404; }
+  .time-cell { font-size: 0.9rem; color: #666; }
+
+  /* EMPTY STATE */
+  .empty-state { padding: 60px; text-align: center; color: #aaa; }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 1rem; }
+
+  /* LOADING */
+  .loading { padding: 40px; text-align: center; color: #aaa; font-style: italic; }
+
+  @media(max-width:600px) {
+    header { padding: 16px; }
+    .main { padding: 20px 12px; }
+    th, td { padding: 10px; }
+    .table-header .search { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="icon">✝</div>
+    <div>
+      <h1>Quiz Dashboard</h1>
+      <p>TEACHER VIEW — BIBLE STUDY QUIZ</p>
+    </div>
+  </div>
+  <button class="refresh-btn" onclick="loadResults()">↻ Refresh</button>
+</header>
+
+<div class="main">
+
+  <!-- CONFIG BANNER -->
+  <div class="config-banner" id="configBanner">
+    <div class="icon">⚙️</div>
+    <div style="flex:1">
+      <h3>Setup Required — Enter Your Backend URL</h3>
+      <p>After deploying the Apps Script, paste your Web App URL below and click Save. You only need to do this once.</p>
+      <input type="text" id="backendInput" placeholder="https://script.google.com/macros/s/.../exec">
+      <br>
+      <button class="save-btn" onclick="saveBackendUrl()">Save & Load Results</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card"><div class="val" id="statTotal">—</div><div class="lbl">Students</div></div>
+    <div class="stat-card"><div class="val pass-col" id="statPassed">—</div><div class="lbl">Passed</div></div>
+    <div class="stat-card"><div class="val fail-col" id="statFailed">—</div><div class="lbl">Failed</div></div>
+    <div class="stat-card"><div class="val gold-col" id="statAvg">—</div><div class="lbl">Class Average</div></div>
+    <div class="stat-card"><div class="val gold-col" id="statHighest">—</div><div class="lbl">Highest Score</div></div>
+    <div class="stat-card"><div class="val" id="statPassRate">—</div><div class="lbl">Pass Rate</div></div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-header">
+      <h2>📋 Student Results</h2>
+      <input type="text" class="search" id="searchBox" placeholder="Search student name..." oninput="filterTable()">
+    </div>
+    <div id="tableBody">
+      <div class="loading">Loading results...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'bsq_backend_url';
+let allResults = [];
+
+// Load saved URL on startup
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    document.getElementById('backendInput').value = saved;
+    document.getElementById('configBanner').style.display = 'none';
+    loadResults();
+  } else {
+    document.getElementById('tableBody').innerHTML = '<div class="empty-state"><div class="icon">⚙️</div><p>Enter your backend URL above to load results.</p></div>';
+    resetStats();
+  }
+});
+
+function saveBackendUrl() {
+  const url = document.getElementById('backendInput').value.trim();
+  if (!url) return;
+  localStorage.setItem(STORAGE_KEY, url);
+  document.getElementById('configBanner').style.display = 'none';
+  loadResults();
+}
+
+function loadResults() {
+  const url = localStorage.getItem(STORAGE_KEY);
+  if (!url) return;
+  document.getElementById('tableBody').innerHTML = '<div class="loading">⏳ Loading results...</div>';
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        allResults = data.results || [];
+        renderTable(allResults);
+        computeStats(allResults);
+      } else {
+        showError('Backend returned an error: ' + (data.error || 'Unknown'));
+      }
+    })
+    .catch(() => {
+      showError('Could not connect. Check your backend URL and make sure it is deployed as a Web App with "Anyone" access.');
+    });
+}
+
+function renderTable(results) {
+  if (!results.length) {
+    document.getElementById('tableBody').innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>No results yet. Students haven\'t submitted the quiz.</p></div>';
+    return;
+  }
+
+  const sorted = [...results].sort((a, b) => b.score - a.score);
+
+  let html = `<table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Student Name</th>
+        <th>Score</th>
+        <th>Percentage</th>
+        <th>Time Taken</th>
+        <th>Submitted</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  sorted.forEach((r, i) => {
+    const rank  = i + 1;
+    const rankClass = rank === 1 ? 'top1' : rank === 2 ? 'top2' : rank === 3 ? 'top3' : '';
+    const pct   = Number(r.percentage) || 0;
+    const pass  = r.status === 'PASS';
+    const auto  = r.submitType === 'Time Up';
+    const ts    = r.timestamp ? new Date(r.timestamp).toLocaleString() : '—';
+
+    html += `<tr>
+      <td><span class="rank ${rankClass}">${rank}</span></td>
+      <td class="student-name">${r.name || '—'}</td>
+      <td class="score-cell">${r.score || 0} / 100</td>
+      <td>
+        <div>${pct}%</div>
+        <div class="pct-bar-wrap">
+          <div class="pct-bar ${pct < 50 ? 'low' : ''}" style="width:${pct}%"></div>
+        </div>
+      </td>
+      <td class="time-cell">⏱ ${r.timeTaken || '—'}</td>
+      <td class="time-cell" style="font-size:0.8rem">${ts}</td>
+      <td>
+        <span class="badge ${pass ? 'pass' : 'fail'}">${pass ? '✓ PASS' : '✗ FAIL'}</span>
+        ${auto ? '<span class="badge auto" style="margin-left:4px">⏰ Time Up</span>' : ''}
+      </td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('tableBody').innerHTML = html;
+}
+
+function filterTable() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  const filtered = allResults.filter(r => (r.name || '').toLowerCase().includes(q));
+  renderTable(filtered);
+}
+
+function computeStats(results) {
+  if (!results.length) { resetStats(); return; }
+  const scores  = results.map(r => Number(r.score) || 0);
+  const passed  = results.filter(r => r.status === 'PASS').length;
+  const failed  = results.length - passed;
+  const avg     = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  const highest = Math.max(...scores);
+  const passRate = Math.round((passed / results.length) * 100);
+
+  document.getElementById('statTotal').textContent   = results.length;
+  document.getElementById('statPassed').textContent  = passed;
+  document.getElementById('statFailed').textContent  = failed;
+  document.getElementById('statAvg').textContent     = avg + '/100';
+  document.getElementById('statHighest').textContent = highest + '/100';
+  document.getElementById('statPassRate').textContent = passRate + '%';
+}
+
+function resetStats() {
+  ['statTotal','statPassed','statFailed','statAvg','statHighest','statPassRate']
+    .forEach(id => document.getElementById(id).textContent = '—');
+}
+
+function showError(msg) {
+  document.getElementById('tableBody').innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>${msg}</p></div>`;
+  resetStats();
+}
+</script>
+</body>
+</html>
