@@ -690,7 +690,7 @@ function submitQuiz(isAutoSubmit) {
   showScreen('result');
 
   // Send to backend via GET params (avoids CORS issues with Apps Script)
-  if (BACKEND_URL !== "https://script.google.com/macros/s/AKfycbxRwM6F0VCtgiDXHIIQgYJuQvLMnMXiz9TReCSBddJAlIEVd2kEulYMo35Zbkq8jEd5/exec") {
+  if (BACKEND_URL !== "") {
     const params = new URLSearchParams({
       action:     'submit',
       name:       studentName,
