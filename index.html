@@ -395,7 +395,7 @@
     <p class="subtitle">Lessons 14 – 24</p>
     <ul class="rules">
       <li>50 multiple choice questions</li>
-      <li>You have exactly <strong>25 minutes</strong></li>
+      <li>You have exactly <strong>15 minutes</strong></li>
       <li>Quiz auto-submits when time runs out</li>
       <li>Your score will be shown immediately</li>
       <li>Results are sent to your teacher</li>
@@ -413,7 +413,7 @@
     <div class="progress-label" id="progressLabel">0 / 50</div>
     <div class="timer-wrap">
       <span class="timer-icon">⏱</span>
-      <div class="timer-display" id="timerDisplay">25:00</div>
+      <div class="timer-display" id="timerDisplay">15:00</div>
     </div>
   </div>
   <div class="questions-container" id="questionsContainer"></div>
@@ -444,7 +444,7 @@
 <div class="timeout-overlay" id="timeoutOverlay">
   <div class="timeout-box">
     <h2>⏰ Time's Up!</h2>
-    <p>Your 20 minutes are up.<br>Your answers are being submitted automatically.</p>
+    <p>Your 10 minutes are up.<br>Your answers are being submitted automatically.</p>
     <button class="submit-now-btn" id="autoSubmitBtn" onclick="submitQuiz(true)">Submitting in 3...</button>
   </div>
 </div>
@@ -452,7 +452,7 @@
 <script>
 // ── CONFIGURATION ─────────────────────────────────────────────
 const BACKEND_URL   = "https://script.google.com/macros/s/AKfycbxRwM6F0VCtgiDXHIIQgYJuQvLMnMXiz9TReCSBddJAlIEVd2kEulYMo35Zbkq8jEd5/exec";
-const TIME_LIMIT    = 25 * 60; // 25 minutes in seconds
+const TIME_LIMIT    = 15 * 60; // 25 minutes in seconds
 const PASS_MARK     = 50;      // 50% to pass
 
 // ── QUESTIONS DATA ────────────────────────────────────────────
